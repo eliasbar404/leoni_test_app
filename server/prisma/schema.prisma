@@ -1,0 +1,304 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// enum Role {
+//   ADMIN
+//   FORMATEUR
+//   OPERATEUR
+// }
+
+// enum QuestionType {
+//   ONE_SELECTE
+//   MULTI_SELECTE
+//   IMAGE_ONE_SELECTE
+//   IMAGE_MULTI_SELECTE
+//   CARD_ROUGE
+// }
+
+// enum DifficultyType{
+//   EASY
+//   MEDIUM
+//   HARD
+// }
+
+// enum QuizStatus {
+//   OPEN
+//   CLOSE
+// }
+
+// // model User {
+// //   id        Int      @id @default(autoincrement())
+// //   firstName String   @unique
+// //   lastName  String 
+// //   password  String
+// //   cin       String   @unique
+// //   matricule String   @unique
+// //   role      Role
+// //   image     String?
+// //   // address   String?
+// //   // phone     String?  @unique
+// //   createdAt DateTime? @default(now())
+
+// //   quizzes   Quiz[]   // One-to-many relation with quizzes
+
+// // }
+
+// model User {
+//   id        Int      @id @default(autoincrement())
+//   firstName String   @unique
+//   lastName  String
+//   password  String
+//   cin       String   @unique
+//   matricule String   @unique
+//   role      Role
+//   image     String?
+//   address   String?
+//   phone     String?  @unique
+//   createdAt DateTime? @default(now())
+
+//   quizzes   Quiz[]   // One-to-many relation with quizzes
+
+//   // Self-referential relationship
+//   formateur   User?     @relation("FormateurOperateurs", fields: [formateurId], references: [id])
+//   formateurId Int?
+//   operateurs  User[]    @relation("FormateurOperateurs")
+
+//   QuizAttempt QuizAttempt[]
+// }
+
+
+
+
+
+
+// // Quiz model
+// model Quiz {
+//   id          Int         @id @default(autoincrement())
+//   title       String
+//   description String
+//   code        String       @unique
+//   creatorId   Int
+//   testPoints  Float
+//   creator     User         @relation(fields: [creatorId], references: [id])
+//   questions   Question[]   // One-to-many relation with questions
+//   QuizAttempt QuizAttempt[] // One-to-many relation with quiz attempts
+//   difficulty  DifficultyType?
+//   category    String?
+//   open_time   DateTime?
+//   close_time  DateTime?
+//   status      QuizStatus?  @default(CLOSE)
+//   timeLimit   Int?         // Optional time limit in minutes
+//   createdAt   DateTime     @default(now())
+//   // updatedAt DateTime    @updatedAt
+// }
+
+
+// // model Group{
+
+// // }
+// // Question model
+// model Question {
+//   id        Int      @id @default(autoincrement())
+//   text      String
+//   imageUrl  String?  // Optional field for image questions
+//   quizId    Int
+//   point     Float
+//   quiz      Quiz     @relation(fields: [quizId], references: [id])
+//   answers   Answer[] // One-to-many relation with answers
+//   type      QuestionType // Specific question type (matches the quiz type)
+// }
+
+// // Answer model
+// model Answer {
+//   id         Int      @id @default(autoincrement())
+//   text       String
+//   isCorrect  Boolean
+//   questionId Int
+//   answerNumber Int? // for Image Type of question
+//   question   Question @relation(fields: [questionId], references: [id])
+// }
+
+// // QuizAttempt model
+// model QuizAttempt {
+//   id             Int      @id @default(autoincrement())
+//   userId         Int      // Reference to the User who attempted the quiz
+//   user           User     @relation(fields: [userId], references: [id]) // Relation to the User model
+//   quizId         Int      // Reference to the Quiz
+//   quiz           Quiz     @relation(fields: [quizId], references: [id]) // Relation to the Quiz model
+//   score          Float    @default(0)  // Allow fractional scores
+//   correctAnswers Int      @default(0)  // Number of correct answers
+//   totalQuestions Int      // Total number of questions in the quiz
+//   completedAt    DateTime @default(now()) // Date and time when quiz was completed
+//   createdAt      DateTime @default(now()) // Date and time when quiz attempt was created
+
+//   @@unique([userId, quizId]) // Ensure a user can attempt the same quiz only once
+// }
+
+
+
+enum Role {
+  ADMIN
+  FORMATEUR
+  OPERATEUR
+}
+
+enum QuestionType {
+  ONE_SELECTE
+  MULTI_SELECTE
+  IMAGE_ONE_SELECTE
+  IMAGE_MULTI_SELECTE
+  CARD_ROUGE
+}
+
+enum DifficultyType {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum QuizStatus {
+  OPEN
+  CLOSE
+}
+
+model User {
+  id             String       @id @default(uuid()) // Primary key as UUID
+  firstName      String
+  lastName       String
+  password       String
+  cin            String       @unique
+  matricule      String       @unique
+  role           Role
+  image          String?
+  address        String?
+  phone          String?      @unique
+  createdAt      DateTime     @default(now())
+
+  // Relations
+  tests          Test[]       // One-to-many relation with tests (creator)
+  testAttempts   TestAttempt[] // One-to-many relation with test attempts
+
+  // Self-referential relationship for Formateur-Operateur
+  formateur      User?         @relation("FormateurOperateurs", fields: [formateurId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  formateurId    String?
+  operateurs     User[]        @relation("FormateurOperateurs")
+  
+  // Relation to groups (as leader or member)
+  leaderOfGroups Group[]       @relation("GroupLeader")
+  memberOfGroups Group?        @relation("GroupMembers", fields: [groupeId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  groupeId       String?
+
+  Attendance Attendance[]
+}
+
+model Test {
+  id          String       @id @default(uuid()) // Primary key as UUID
+  title       String
+  description String
+  code        String       @unique
+  creatorId   String
+  testPoints  Float
+  difficulty  DifficultyType?
+  category    String?
+  open_time   DateTime?
+  close_time  DateTime?
+  status      QuizStatus   @default(CLOSE)
+  timeLimit   Int?         // Optional time limit in minutes
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  creator     User         @relation(fields: [creatorId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  questions   Question[]   // One-to-many relation with questions
+  testAttempts TestAttempt[] // One-to-many relation with test attempts
+}
+
+model Question {
+  id        String       @id @default(uuid()) // Primary key as UUID
+  text      String
+  imageUrl  String?       // Optional field for image questions
+  testId    String
+  point     Float
+  type      QuestionType  // Specific question type (matches the test type)
+
+  // Relations
+  test      Test          @relation(fields: [testId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  answers   Answer[]      // One-to-many relation with answers
+}
+
+model Answer {
+  id         String       @id @default(uuid()) // Primary key as UUID
+  text       String
+  isCorrect  Boolean
+  answerNumber Int?       // Optional: for Image Type of question
+  questionId String
+
+  // Relations
+  question   Question      @relation(fields: [questionId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+}
+
+model TestAttempt {
+  id             String    @id @default(uuid()) // Primary key as UUID
+  userId         String    // Reference to the User who attempted the test
+  testId         String    // Reference to the Test
+  score          Float     @default(0)         // Allow fractional scores
+  correctAnswers Int       @default(0)         // Number of correct answers
+  totalQuestions Int                           // Total number of questions in the test
+  completedAt    DateTime  @default(now())     // Date and time when test was completed
+  createdAt      DateTime  @default(now())     // Date and time when test attempt was created
+
+  // Relations
+  user           User      @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  test           Test      @relation(fields: [testId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+
+  @@unique([userId, testId]) // Ensure a user can attempt the same test only once
+}
+
+model Group {
+  id         String       @id @default(uuid()) // Primary key as UUID
+  name       String
+  description String?
+  leaderId   String       // Reference to the leader (FORMATEUR)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  // Relations
+  leader     User         @relation("GroupLeader", fields: [leaderId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  members    User[]       @relation("GroupMembers")
+
+  Attendance Attendance[]
+}
+
+
+model Attendance {
+  id          String   @id @default(uuid()) // Primary key as UUID
+  userId      String   // Reference to the student (User)
+  groupId     String   // Reference to the group (Group)
+  date        DateTime // Date of attendance
+  isPresent   Boolean  // Whether the student was present or not
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  group       Group    @relation(fields: [groupId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+
+  @@unique([userId, groupId, date]) // Ensure unique attendance entry per user, group, and date
+}
+
+
+
+
+
