@@ -137,6 +137,10 @@ const FormateurUpdateTestPage =  React.lazy(() => import('./pages/formateur/Form
 
 const GroupOperateurPage =  React.lazy(() => import('./pages/formateur/GroupOperateurPage'));
 
+const ToDoCalendar =  React.lazy(() => import('./pages/formateur/ToDoCalendar'));
+
+
+
 
 
 const OperateurInfo =  React.lazy(() => import('./pages/formateur/Operateur-Info'));
@@ -144,6 +148,16 @@ const OperateurInfo =  React.lazy(() => import('./pages/formateur/Operateur-Info
 // const AbsenceBoard =  React.lazy(() => import('./pages/formateur/AbsenceBoard'));
 
 const ManageAbsenceBoard =  React.lazy(() => import('./pages/formateur/ManageAbsenceBoard'));
+
+
+const InfoPage = React.lazy(() => import('./pages/InfoPage'));
+
+const ContactHelpPage = React.lazy(() => import('./pages/ContactHelpPage'));
+
+
+const OperateurProfilePageFormateur = React.lazy(() => import('./pages/formateur/OperateurProfilePage'));
+
+
 
 
 
@@ -326,15 +340,59 @@ function App() {
             />
             
 
-            {/* <Route
-              path="/formateur/dashboard/absence/manage"
+            <Route
+              path="/formateur/dashboard/listedefaire"
               element={
                 <Suspense fallback={<DelayedLoading />}>
-                  <ManageAbsenceBoard/>
+                  <ToDoCalendar/>
                 </Suspense>
               }
-            /> */}
-            
+            />
+
+            {/* InfoPage */}
+
+            <Route
+              path="/formateur/dashboard/info"
+              element={
+                <Suspense fallback={<DelayedLoading />}>
+                  {/* <div>Info...</div> */}
+                  <InfoPage/>
+                </Suspense>
+              }
+            />
+
+
+            <Route
+              path="/formateur/dashboard/contact"
+              element={
+                <Suspense fallback={<DelayedLoading />}>
+                  <ContactHelpPage/>
+                  {/* <div>contact....</div> */}
+                </Suspense>
+              }
+            />
+
+
+            <Route
+              path="/formateur/dashboard/operateur/:id"
+              element={
+                <Suspense fallback={<DelayedLoading />}>
+                  {/* <ContactHelpPage/> */}
+                  <OperateurProfilePageFormateur/>
+                </Suspense>
+              }
+            />
+            {/* /formateur/dashboard/dossiers */}
+
+            <Route
+              path="/formateur/dashboard/dossiers"
+              element={
+                <Suspense fallback={<DelayedLoading />}>
+                  {/* <ContactHelpPage/> */}
+                  <div>dossiers.... Coming Son</div>
+                </Suspense>
+              }
+            />
           </Route>
           
 

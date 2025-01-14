@@ -7,6 +7,7 @@ export interface UserFormData {
     role: 'FORMATEUR' | 'OPERATEUR';
     image: string;
     address:string;
+    gender: 'MALE' | 'FEMALE';
     phone:string;
     groupeId:string|null;
     formateurId:null|string|number;

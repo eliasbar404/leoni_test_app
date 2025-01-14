@@ -9,6 +9,9 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { time } from 'console';
+import Joi from "joi";
+
+
 
 // Define __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -21,6 +24,10 @@ app.use('/uploads', express.static('uploads'));
 app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.json({ limit: '10mb' })); // Adjust the limit as needed
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+
+
+
+
 
 // Middleware
 app.use(cors({
@@ -38,7 +45,7 @@ const SECRET_KEY = "your-secret-key";
 
 // Register a new user
 app.post("/register", async (req, res) => {
-  const { firstName,lastName,cin,matricule,password,role, image ,address,phone,formateurId} = req.body;
+  const { firstName,lastName,cin,matricule,password,role, image ,address,phone,formateurId ,gender} = req.body;
   // Validate role
   if (!["ADMIN", "FORMATEUR","OPERATEUR"].includes(role)) {
     return res.status(400).json({ error: "Invalid role" });
@@ -47,7 +54,7 @@ app.post("/register", async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, 10);
   try {
     const user = await prisma.user.create({
-      data: { firstName:firstName,lastName:lastName,cin:cin,matricule:matricule,password: hashedPassword, role,image },
+      data: { firstName:firstName,lastName:lastName,cin:cin,matricule:matricule,password: hashedPassword, role,image ,gender},
     });
     res.json({ message: "User registered successfully", user });
   } catch (error) {
@@ -67,6 +74,7 @@ app.post('/login', async (req, res) => {
     const user = await prisma.user.findUnique({
       where: { cin: cin }
     });
+
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -750,157 +758,17 @@ app.get('/formateur/operateurs', authenticateFormateur, async (req, res) => {
 });
 
 
-// app.get('/formateur/operateurs', authenticateFormateur, async (req, res) => {
-//   const formateurId = req.user.id;
 
-//   try {
-//     // Fetch users with their formateur's data and group memberships
-//     const users = await prisma.user.findMany({
-//       where: {
-//         formateurId: formateurId
-//       },
-//       include: {
-//         formateur: {
-//           select: {
-//             firstName: true,
-//             lastName: true,
-//           },
-//         },
-//         memberOfGroups: {
-//           select: {
-//             name: true,
-//           },
-//         },
-//       },
-//     });
-
-//     // Map users to include formateur name and group(s)
-//     const usersWithFormateurAndGroups = users.map(user => {
-//       // Check if user has groups, then map them
-//       const groupNames = user.memberOfGroups && user.memberOfGroups.length > 0
-//         ? user.memberOfGroups.map(group => group.name)
-//         : []; // If no groups, set it to an empty array
-
-//       return {
-//         id: user.id,
-//         firstName: user.firstName,
-//         lastName: user.lastName,
-//         cin: user.cin,
-//         matricule: user.matricule,
-//         role: user.role,
-//         image: user.image,
-//         address: user.address,
-//         groups: groupNames.length > 0 ? groupNames[0] : null, // Include groups if available
-//         phone: user.phone,
-//         formateur: user.formateur
-//           ? `${user.formateur.firstName} ${user.formateur.lastName}`
-//           : null, // Include formateur's full name if available
-//       };
-//     });
-
-//     // Send the users data with groups and formateur info to the frontend
-//     return res.status(200).json(usersWithFormateurAndGroups);
-//   } catch (error) {
-//     console.error('Error fetching users:', error);
-//     return res.status(500).json({ message: 'Error fetching users' });
-//   }
-// });
-
-
-// app.get('/formateur/operateurs', authenticateFormateur, async (req, res) => {
-
-//   const formateurId = req.user.id;
-//   try {
-//     // Fetch users with their formateur's data
-//     const users = await prisma.user.findMany({
-//       where: {
-//         formateurId:formateurId
-//       },
-      
-//       include: {
-//         formateur: {
-//           select: {
-//             firstName: true,
-//             lastName: true,
-//           },
-//         },
-//         memberOfGroups: {
-//           select: {
-//             name: true,
-//           },
-//         },
-//       },
-
-//     });
-
-//     // Map users to include formateur name
-//     const usersWithFormateur = users.map(user => ({
-//       id: user.id,
-//       firstName: user.firstName,
-//       lastName: user.lastName,
-//       cin: user.cin,
-//       matricule: user.matricule,
-//       role: user.role,
-//       image: user.image,
-//       address: user.address,
-//       groupe:user.memberOfGroups.name ? user.memberOfGroups.name:null,
-//       phone: user.phone,
-//       formateur: user.formateur
-//       ? `${user.formateur.firstName} ${user.formateur.lastName}`
-//       : null, // Include formateur's full name if available
-//     }));
-
-//     // Send the users data to the frontend
-//     return res.status(200).json(usersWithFormateur);
-//   } catch (error) {
-//     console.error('Error fetching users:', error);
-//     return res.status(500).json({ message: 'Error fetching users' });
-//   }
-// });
-
-
-// app.get('/admin/users', authenticateAdmin, async (req, res) => {
-//   try {
-//     // Fetch users from the database
-//     const users = await prisma.user.findMany({
-//       where: {
-//         role: {
-//           not: "ADMIN",
-//         },
-//       },
-//     });
-    
-//     // Map users to include full image URL and other necessary fields
-//     const usersWithImageUrl = users.map(user => ({
-//       id: user.id,
-//       firstName: user.firstName,
-//       lastName: user.lastName,
-//       cin: user.cin,
-//       matricule: user.matricule,
-//       role: user.role,
-//       image: user.image, // Assuming 'image' field contains file name
-//       address:user.address,
-//       phone:user.phone,
-//       formateur:null
-//     }));
-
-//     // Send the users data to the frontend
-//     return res.status(200).json(usersWithImageUrl);
-//   } catch (error) {
-//     console.error('Error fetching users:', error);
-//     return res.status(500).json({ message: 'Error fetching users' });
-//   }
-// });
 
 
 
 // Admin Create Users
 
 app.post('/admin/users/create', authenticateAdmin, multer({ storage }).single('image'), async (req, res) => {
-  const { firstName, lastName, cin, matricule, password, role } = req.body;
+  const { firstName, lastName, cin, matricule, password, role ,gender} = req.body;
   const image = req.file ? `http://localhost:3000/uploads/${req.file.filename}` : null; // Image URL
 
-  if (!firstName || !lastName || !cin || !matricule || !password || !role) {
+  if (!firstName || !lastName || !cin || !matricule || !password || !role || !gender) {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
@@ -920,7 +788,8 @@ app.post('/admin/users/create', authenticateAdmin, multer({ storage }).single('i
         image, // Store the image URL
         address:req.body.address,
         phone:req.body.phone,
-        formateurId:parseInt(req.body.formateurId)
+        gender:req.body.gender,
+        formateurId:null,
       }
     });
 
@@ -933,6 +802,7 @@ app.post('/admin/users/create', authenticateAdmin, multer({ storage }).single('i
         cin: newUser.cin,
         matricule: newUser.matricule,
         role: newUser.role,
+        gender:newUser.gender,
         image: newUser.image,
       }
     });
@@ -949,7 +819,7 @@ app.post(
   authenticateFormateur,
   multer({ storage }).single('image'),
   async (req, res) => {
-    const { firstName, lastName, cin, matricule, password } = req.body;
+    const { firstName, lastName, cin, matricule, password ,gender} = req.body;
     const image = req.file ? `http://localhost:3000/uploads/${req.file.filename}` : null; // Image URL
 
     // Retrieve the formateurId from the authenticated user
@@ -957,7 +827,7 @@ app.post(
     const role = "OPERATEUR"; // Default role is OPERATEUR
 
     // Validate required fields
-    if (!firstName || !lastName || !cin || !matricule || !password) {
+    if (!firstName || !lastName || !cin || !matricule || !password || !gender) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
@@ -982,6 +852,7 @@ app.post(
           groupeId:req.body.groupeId || null,
           address: req.body.address || null,
           phone: req.body.phone || null,
+          gender:gender,
           formateurId: formateurId, // Use formateurId from token
         },
       });
@@ -1300,251 +1171,7 @@ app.put('/formateur/quizzes/:id',
   }
 );
 
-// const createQuizWithQuestions = async ({ quizData, questions, files }) => {
-//   return await prisma.$transaction(async (prisma) => {
-//     // Create the quiz first
-//     const quiz = await prisma.quiz.create({
-//       data: quizData
-//     });
 
-//     // Create questions with their answers
-//     for (let i = 0; i < questions.length; i++) {
-//       const question = questions[i];
-//       const questionFile = files.find(f => f.fieldname === `questionImage_${i}`);
-
-//       const newQuestion = await prisma.question.create({
-//         data: {
-//           text: question.text,
-//           type: question.type,
-//           point: parseFloat(question.point),
-//           quizId: quiz.id,
-//           imageUrl: questionFile ? questionFile.filename : null,
-//         },
-//       });
-
-//       // Create answers for the question
-//       const answers = question.answers || [];
-//       await Promise.all(answers.map(answer => 
-//         prisma.answer.create({
-//           data: {
-//             text: answer.text,
-//             isCorrect: answer.isCorrect,
-//             questionId: newQuestion.id,
-//           },
-//         })
-//       ));
-//     }
-
-//     return quiz;
-//   });
-// };
-
-// const createQuiz = async (req, res) => {
-//   try {
-//     const {
-//       title,
-//       description,
-//       code,
-//       category,
-//       difficulty,
-//       testPoints,
-//       openTime,
-//       closeTime,
-//       timeLimit,
-//       questions: questionsJson
-//     } = req.body;
-
-//     // Validate required fields
-//     if (!title || !description || !code || !difficulty || !testPoints) {
-//       return res.status(400).json({ 
-//         error: 'Invalid input data. Please provide all required fields.' 
-//       });
-//     }
-
-//     const questions = JSON.parse(questionsJson);
-//     const creatorId = req.user.id;
-//     const files = req.files || [];
-
-//     const quiz = await createQuizWithQuestions({
-//       quizData: {
-//         title,
-//         description,
-//         code,
-//         category,
-//         difficulty,
-//         testPoints: parseInt(testPoints),
-//         creatorId,
-//         open_time: openTime ? new Date(openTime) : null,
-//         close_time: closeTime ? new Date(closeTime) : null,
-//         timeLimit: timeLimit ? parseInt(timeLimit) : null,
-//       },
-//       questions,
-//       files
-//     });
-
-//     res.status(201).json({
-//       message: 'Quiz created successfully.',
-//       id: quiz.id,
-//     });
-//   } catch (error) {
-//     console.error('Error creating quiz:', error);
-//     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-//       return res.status(401).json({ error: 'Invalid or expired token.' });
-//     }
-//     res.status(500).json({ error: 'Failed to create quiz.' });
-//   }
-// };
-
-// const storage2 = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, 'uploads/');
-//   },
-//   filename: (req, file, cb) => {
-//     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
-//     cb(null, `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
-//   },
-// });
-
-
-// const upload = multer({ 
-//   storage2,
-//   fileFilter: (req, file, cb) => {
-//     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-//     if (allowedTypes.includes(file.mimetype)) {
-//       cb(null, true);
-//     } else {
-//       cb(new Error('Invalid file type. Only JPEG, PNG and GIF are allowed.'));
-//     }
-//   },
-//   limits: {
-//     fileSize: 5 * 1024 * 1024 // 5MB limit
-//   }
-// });
-
-// app.post('/formateur/quizzes', 
-//   authenticateFormateur,
-//   upload.array('questionImage', 50), // Allow multiple images, max 50
-//   createQuiz
-// );
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  // app.post('/questions', multer({ storage }).single('imageFile'), async (req, res) => {
-  //   const { quizId, text, type ,point} = req.body;
-  //   try {
-  //     console.log('Request Body:', req.body);
-  //     console.log('File:', req.file);
-  
-  //     const newQuestion = await prisma.question.create({
-  //       data: {
-  //         text,
-  //         type,
-  //         point:parseFloat(point),
-  //         quizId: parseInt(quizId),
-  //         imageUrl: req.file ? req.file.filename : null,
-  //       },
-  //     });
-  
-  //     if (type === 'IMAGE' && req.body.numberAnswers) {
-  //       const numberAnswers = JSON.parse(req.body.numberAnswers);
-  //       for (const answer of numberAnswers) {
-  //         await prisma.numberAnswer.create({
-  //           data: {
-  //             number: answer.number,
-  //             text: answer.text,
-  //             questionId: newQuestion.id,
-  //           },
-  //         });
-  //       }
-  //     } else if (req.body.answers) {
-  //       const answers = JSON.parse(req.body.answers);
-  //       for (const answer of answers) {
-  //         await prisma.answer.create({
-  //           data: {
-  //             text: answer.text,
-  //             isCorrect: answer.isCorrect,
-  //             questionId: newQuestion.id,
-  //           },
-  //         });
-  //       }
-  //     }
-  
-  //     res.status(201).json(newQuestion);
-  //   } catch (error) {
-  //     console.error('Error creating question:', error);
-  //     res.status(500).json({ error: 'Failed to create question' });
-  //   }
-  // });
-
-
-
-
-  
-  // app.post('/formateur/questions', authenticateFormateur,multer({ storage }).single('imageFile'), async (req, res) => {
-  //   const { quizId, text, type ,point} = req.body;
-  //   try {
-  //     console.log('Request Body:', req.body);
-  //     console.log('File:', req.file);
-  
-  //     const newQuestion = await prisma.question.create({
-  //       data: {
-  //         text,
-  //         type,
-  //         point:parseFloat(point),
-  //         quizId: parseInt(quizId),
-  //         imageUrl: req.file ? req.file.filename : null,
-  //       },
-  //     });
-  
-  //     if (type === 'IMAGE' && req.body.numberAnswers) {
-  //       const numberAnswers = JSON.parse(req.body.numberAnswers);
-  //       let counter = 1;
-  //       for (const answer of numberAnswers) {
-  //         await prisma.answer.create({
-  //           data: {
-  //             answerNumber: counter,
-  //             text: answer.text,
-  //             questionId: newQuestion.id,
-  //             isCorrect:true,
-  //           },
-  //         });
-  //         counter++;
-  //       }
-
-  //     } else if (req.body.answers) {
-  //       const answers = JSON.parse(req.body.answers);
-  //       for (const answer of answers) {
-  //         await prisma.answer.create({
-  //           data: {
-  //             text: answer.text,
-              
-  //             isCorrect: answer.isCorrect,
-  //             questionId: newQuestion.id,
-  //           },
-  //         });
-  //       }
-  //     }
-  
-  //     res.status(201).json(newQuestion);
-  //   } catch (error) {
-  //     console.error('Error creating question:', error);
-  //     res.status(500).json({ error: 'Failed to create question' });
-  //   }
-  // });
 
 
 
@@ -1847,94 +1474,9 @@ app.get("/quiz/:quizId", async (req, res) => {
 
 
 
-// app.post("/quiz-attempts", authenticateOPERATEUR,async (req, res) => {
-//   const { quizId, answers } = req.body;
 
-//   const userId = req.user?.id;
+// POST endpoint to save a quiz attempt
 
-//   try {
-//     // Validate input
-//     if (!userId || !quizId || !Array.isArray(answers)) {
-//       return res.status(400).json({ error: "Invalid input format" });
-//     }
-
-//     // Check if the quiz exists
-//     const quiz = await prisma.test.findUnique({
-//       where: { id: quizId },
-//       include: { questions: { include: { answers: true } } },
-//     });
-
-//     if (!quiz) {
-//       return res.status(404).json({ error: "Quiz not found" });
-//     }
-
-//     // Check if the user exists
-//     const user = await prisma.user.findUnique({
-//       where: { id: userId },
-//     });
-
-//     if (!user) {
-//       return res.status(404).json({ error: "User not found" });
-//     }
-
-//     // Check if the user has already attempted the quiz
-//     const existingAttempt = await prisma.testAttempt.findUnique({
-//       where: {
-//         // Use the correct compound key format
-//         userId_testId: {
-//           userId: userId,
-//           testId: quizId,
-//         },
-//       },
-//     });
-
-//     if (existingAttempt) {
-//       return res
-//         .status(400)
-//         .json({ error: "User has already attempted this quiz" });
-//     }
-
-//     // Calculate the score and correct answers
-//     let score = 0;
-//     let correctAnswers = 0;
-
-//     for (const answer of answers) {
-//       const question = quiz.questions.find((q) => q.id === answer.questionId);
-//       if (!question) continue;
-
-//       // Extract correct answers for the question
-//       const correctAnswerIds = question.answers
-//         .filter((a) => a.isCorrect)
-//         .map((a) => a.id);
-
-//       // Compare submitted answers with correct answers
-//       const isCorrect =
-//         correctAnswerIds.length === answer.selectedAnswerIds.length &&
-//         correctAnswerIds.every((id) => answer.selectedAnswerIds.includes(id));
-
-//       if (isCorrect) {
-//         score += question.point;
-//         correctAnswers += 1;
-//       }
-//     }
-
-//     // Save the quiz attempt in the database
-//     const quizAttempt = await prisma.testAttempt.create({
-//       data: {
-//         userId,
-//         testId:quizId,
-//         score,
-//         correctAnswers,
-//         totalQuestions: quiz.questions.length,
-//       },
-//     });
-
-//     return res.status(201).json({ success: true, quizAttempt });
-//   } catch (error) {
-//     console.error("Error submitting quiz attempt:", error);
-//     return res.status(500).json({ error: "Internal server error" });
-//   }
-// });
 app.post("/quiz-attempts", authenticateOPERATEUR, async (req, res) => {
   const { quizId, answers } = req.body;
 
@@ -2535,175 +2077,7 @@ app.put('/operateur/:id', authenticateFormateur, multer({ storage }).single('ima
   }
 });
 
-// app.put('/operateur/:id', authenticateFormateur, multer({ storage }).single('image'), async (req, res) => {
-//   const { firstName, lastName, cin, matricule, address, phone, groupeId = null } = req.body;
 
-//   // Function to delete old image
-//   function deleteOldImage(imagePath) {
-//     const fullPath = path.resolve(imagePath);
-//     if (fs.existsSync(fullPath)) {
-//       fs.unlink(fullPath, (err) => {
-//         if (err) {
-//           console.error(`Failed to delete old image: ${fullPath}`, err);
-//         } else {
-//           console.log(`Deleted old image: ${fullPath}`);
-//         }
-//       });
-//     } else {
-//       console.warn(`Image not found for deletion: ${fullPath}`);
-//     }
-//   }
-
-//   // Validate that all fields except image are provided
-//   if (!firstName || !lastName || !cin || !matricule || !address || !phone) {
-//     return res.status(400).json({ message: 'All fields except image are required' });
-//   }
-
-//   try {
-//     // Fetch the existing user to get the current image path
-//     const existingUser = await prisma.user.findUnique({
-//       where: { id: req.params.id },
-//     });
-
-//     if (!existingUser) {
-//       return res.status(404).json({ message: 'User not found' });
-//     }
-
-//     // Check if the phone number is already taken by another user
-//     const existingPhoneUser = await prisma.user.findUnique({
-//       where: { phone },
-//     });
-
-//     if (existingPhoneUser && existingPhoneUser.id !== req.params.id) {
-//       return res.status(400).json({ message: 'This phone number is already in use by another user' });
-//     }
-
-//     let imageURL = existingUser.image; // Default to existing image if no new one is uploaded
-
-//     // Check if a new image is uploaded
-//     if (req.file) {
-//       // Delete the old image
-//       if (existingUser.image) {
-//         const oldImagePath = existingUser.image.replace(`${BASE_URL}/`, '');
-//         deleteOldImage(path.join(__dirname, 'uploads', oldImagePath)); // Delete the old image file
-//       }
-
-//       // Set the new image URL
-//       imageURL = `${BASE_URL}/uploads/${req.file.filename}`;
-//     }
-
-//     // Update the user
-//     const updatedUser = await prisma.user.update({
-//       where: { id: req.params.id },
-//       data: {
-//         firstName,
-//         lastName,
-//         cin,
-//         matricule,
-//         address,
-//         phone,
-//         groupeId,
-//         image: imageURL, // Only update the image if a new one is uploaded
-//       },
-//     });
-
-//     return res.status(200).json({
-//       message: 'Profile updated successfully',
-//       user: {
-//         ...updatedUser,
-//         image: imageURL, // Ensure the correct image URL is returned
-//       },
-//     });
-//   } catch (error) {
-//     console.error('Error updating profile:', error);
-//     return res.status(500).json({ message: 'Error updating profile' });
-//   }
-// });
-
-// app.put('/operateur/:id', authenticateFormateur, multer({ storage }).single('image'), async (req, res) => {
-//   const { firstName, lastName, cin, matricule ,address, phone, groupeId=null } = req.body;
-
-//   function deleteOldImage(imagePath) {
-//     const fullPath = path.resolve(imagePath); // Make sure we get an absolute path
-//     if (fs.existsSync(fullPath)) {
-//       fs.unlink(fullPath, (err) => {
-//         if (err) {
-//           console.error(`Failed to delete old image: ${fullPath}`, err);
-//         } else {
-//           console.log(`Deleted old image: ${fullPath}`);
-//         }
-//       });
-//     } else {
-//       console.warn(`Image not found for deletion: ${fullPath}`);
-//     }
-//   }
-
-//   if (!firstName || !lastName || !cin || !matricule || !address || !phone) {
-//     return res.status(400).json({ message: 'All fields except image are required' });
-//   }
-
-//   try {
-//     // Fetch the existing user to get the current image path
-//     const existingUser = await prisma.user.findUnique({
-//       where: { id: req.params.id },
-//     });
-
-//     if (!existingUser) {
-//       return res.status(404).json({ message: 'User not found' });
-//     }
-
-//     // Check if phone number is already taken by another user (excluding the current user)
-//     const existingPhoneUser = await prisma.user.findUnique({
-//       where: { phone },
-//     });
-
-//     if (existingPhoneUser && existingPhoneUser.id !== req.params.id) {
-//       return res.status(400).json({ message: 'This phone number is already in use by another user' });
-//     }
-
-//     let imageURL;
-
-//     // Check if a new image was uploaded
-//     if (req.file) {
-//       // Build the full URL for the uploaded image
-//       imageURL = `${BASE_URL}/uploads/${req.file.filename}`;
-
-//       // Delete the previous image if it exists
-//       if (existingUser.image) {
-//         // Extract the local file path from the image URL
-//         const oldImagePath = existingUser.image.replace(`${BASE_URL}/`, '');
-//         deleteOldImage(path.join(__dirname, 'uploads', oldImagePath)); // Adjust the path for the 'uploads' directory
-//       }
-//     }
-
-//     const updateData = {
-//       firstName,
-//       lastName,
-//       cin,
-//       matricule,
-//       address,
-//       phone,
-//       groupeId,
-//       ...(imageURL && { image: imageURL }), // Only include the image URL if an image was uploaded
-//     };
-
-//     const updatedUser = await prisma.user.update({
-//       where: { id: req.params.id },
-//       data: updateData,
-//     });
-
-//     return res.status(200).json({
-//       message: 'Profile updated successfully',
-//       user: {
-//         ...updatedUser,
-//         image: updateData.image || updatedUser.image, // Ensure the correct image URL is returned
-//       },
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({ message: 'Error updating profile' });
-//   }
-// });
 
 
 app.get('/operateur/check-phone/:phone', async (req, res) => {
@@ -2724,81 +2098,6 @@ app.get('/operateur/check-phone/:phone', async (req, res) => {
 });
 
 
-// app.put('/operateur/:id', authenticateFormateur, multer({ storage }).single('image'), async (req, res) => {
-//   const { firstName, lastName, cin, matricule ,address,phone,groupeId=null } = req.body;
-  
-//   function deleteOldImage(imagePath) {
-//     const fullPath = path.resolve(imagePath); // Make sure we get an absolute path
-//     if (fs.existsSync(fullPath)) {
-//       fs.unlink(fullPath, (err) => {
-//         if (err) {
-//           console.error(`Failed to delete old image: ${fullPath}`, err);
-//         } else {
-//           console.log(`Deleted old image: ${fullPath}`);
-//         }
-//       });
-//     } else {
-//       console.warn(`Image not found for deletion: ${fullPath}`);
-//     }
-//   }
-
-//   if (!firstName || !lastName || !cin || !matricule || !address || !phone) {
-//     return res.status(400).json({ message: 'All fields except image are required' });
-//   }
-
-//   try {
-//     // Fetch the existing user to get the current image path
-//     const existingUser = await prisma.user.findUnique({
-//       where: { id: req.params.id },
-//     });
-
-//     if (!existingUser) {
-//       return res.status(404).json({ message: 'User not found' });
-//     }
-
-//     let imageURL;
-
-//     // Check if a new image was uploaded
-//     if (req.file) {
-//       // Build the full URL for the uploaded image
-//       imageURL = `${BASE_URL}/uploads/${req.file.filename}`;
-
-//       // Delete the previous image if it exists
-//       if (existingUser.image) {
-//         // Extract the local file path from the image URL
-//         const oldImagePath = existingUser.image.replace(`${BASE_URL}/`, '');
-//         deleteOldImage(path.join(__dirname, 'uploads', oldImagePath)); // Adjust the path for the 'uploads' directory
-//       }
-//     }
-
-//     const updateData = {
-//       firstName,
-//       lastName,
-//       cin,
-//       matricule,
-//       address,
-//       phone,
-//       groupeId,
-//       ...(imageURL && { image: imageURL }), // Only include the image URL if an image was uploaded
-//     };
-
-//     const updatedUser = await prisma.user.update({
-//       where: { id: req.params.id },
-//       data: updateData,
-//     });
-
-//     return res.status(200).json({
-//       message: 'Profile updated successfully',
-//       user: {
-//         ...updatedUser,
-//         image: updateData.image || updatedUser.image, // Ensure the correct image URL is returned
-//       },
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({ message: 'Error updating profile' });
-//   }
-// });
 
 
 
@@ -3152,6 +2451,1083 @@ app.post('/api/attendance',authenticateFormateur, async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+// -----------------------------------------------------
+// -----------------------------------------------------
+//------------- Events and todo ------------------------
+// -----------------------------------------------------
+// -----------------------------------------------------
+
+
+// app.get('/events', authenticateFormateur, async (req, res) => {
+
+//   try {
+//     const events = await prisma.event.findMany({
+//       where: {
+//         userId: req.user.id
+//       },
+//       include: {
+//         todos: true
+//       },
+//       orderBy: {
+//         date: 'asc'
+//       }
+//     });
+//     res.json(events);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Failed to fetch events' });
+//   }
+// });
+
+// // Create a new event
+// app.post('/events', authenticateFormateur, async (req, res) => {
+//   try {
+//     const { title, description, date, startTime, endTime, todos } = req.body;
+
+//     const event = await prisma.event.create({
+//       data: {
+//         title,
+//         description,
+//         date: new Date(date),
+//         startTime: new Date(startTime),
+//         endTime: new Date(endTime),
+//         userId: req.user.id,
+//         todos: {
+//           create: todos.map((todo) => ({
+//             text: todo.text,
+//             completed: false
+//           }))
+//         }
+//       },
+//       include: {
+//         todos: true
+//       }
+//     });
+
+//     res.status(201).json(event);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Failed to create event' });
+//   }
+// });
+
+// // Update an event
+// app.put('/event/:id', authenticateFormateur, async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { title, description, date, startTime, endTime, todos } = req.body;
+
+//     // Verify event belongs to the formateur
+//     const existingEvent = await prisma.event.findFirst({
+//       where: {
+//         id,
+//         userId: req.user.id
+//       }
+//     });
+
+//     if (!existingEvent) {
+//       return res.status(404).json({ error: 'Event not found' });
+//     }
+
+//     // Delete existing todos
+//     await prisma.todo.deleteMany({
+//       where: {
+//         eventId: id
+//       }
+//     });
+
+//     // Update event and create new todos
+//     const updatedEvent = await prisma.event.update({
+//       where: { id },
+//       data: {
+//         title,
+//         description,
+//         date: new Date(date),
+//         startTime: new Date(startTime),
+//         endTime: new Date(endTime),
+//         todos: {
+//           create: todos.map((todo) => ({
+//             text: todo.text,
+//             completed: false
+//           }))
+//         }
+//       },
+//       include: {
+//         todos: true
+//       }
+//     });
+
+//     res.json(updatedEvent);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Failed to update event' });
+//   }
+// });
+
+// // Delete an event
+// app.delete('/event/:id', authenticateFormateur, async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     // Verify event belongs to the formateur
+//     const existingEvent = await prisma.event.findFirst({
+//       where: {
+//         id,
+//         userId: req.user.id
+//       }
+//     });
+
+//     if (!existingEvent) {
+//       return res.status(404).json({ error: 'Event not found' });
+//     }
+
+//     // Delete event (todos will be automatically deleted due to cascade)
+//     await prisma.event.delete({
+//       where: { id }
+//     });
+
+//     res.json({ message: 'Event deleted successfully' });
+//   } catch (error) {
+//     res.status(500).json({ error: 'Failed to delete event' });
+//   }
+// });
+
+// // Toggle todo completion status
+// app.patch('/todos/:id', authenticateFormateur, async (req, res) => {
+//   try {
+//     const { id } = req.params;
+    
+//     const todo = await prisma.todo.findUnique({
+//       where: { id },
+//       include: {
+//         event: true
+//       }
+//     });
+
+//     if (!todo || todo.event.userId !== req.user.id) {
+//       return res.status(404).json({ error: 'Todo not found' });
+//     }
+
+//     const updatedTodo = await prisma.todo.update({
+//       where: { id },
+//       data: {
+//         completed: !todo.completed
+//       }
+//     });
+
+//     res.json(updatedTodo);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Failed to update todo' });
+//   }
+// });
+
+
+
+
+
+
+
+
+
+
+
+// Input validation schema for creating/updating events
+const eventSchema = Joi.object({
+  title: Joi.string().required(),
+  description: Joi.string().allow('').optional(),
+  date: Joi.date().iso().required(),
+  startTime: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).required(), // HH:MM format
+  endTime: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).required(), // HH:MM format
+  todos: Joi.array().items(
+    Joi.object({
+      text: Joi.string().required()
+    })
+  ).optional()
+});
+
+// Middleware to check if an event belongs to the authenticated user
+const checkEventOwnership = async (req, res, next) => {
+  const { id } = req.params;
+  const event = await prisma.event.findFirst({
+    where: { id, userId: req.user.id }
+  });
+
+  if (!event) {
+    return res.status(404).json({ error: 'Event not found or unauthorized' });
+  }
+
+  req.event = event; // Attach the event to the request object
+  next();
+};
+
+// Get all events for the authenticated user
+app.get('/events', authenticateFormateur, async (req, res) => {
+  try {
+    const events = await prisma.event.findMany({
+      where: { userId: req.user.id },
+      include: { todos: true },
+      orderBy: { date: 'asc' }
+    });
+    res.json(events);
+  } catch (error) {
+    console.error('Error fetching events:', error);
+    res.status(500).json({ error: 'Failed to fetch events. Please try again later.' });
+  }
+});
+
+// Create a new event
+
+app.post('/events', authenticateFormateur, async (req, res) => {
+  try {
+    // Validate request body
+    const { error, value } = eventSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const { title, description, date, startTime, endTime, todos } = value;
+
+    const event = await prisma.event.create({
+      data: {
+        title,
+        description,
+        date: new Date(date), // Convert date to Date object
+        startTime, // Store as string (e.g., "10:00")
+        endTime, // Store as string (e.g., "11:00")
+        userId: req.user.id,
+        todos: {
+          create: todos.map((todo) => ({
+            text: todo.text,
+            completed: false
+          }))
+        }
+      },
+      include: { todos: true }
+    });
+
+    res.status(201).json(event);
+  } catch (error) {
+    console.error('Error creating event:', error);
+    res.status(500).json({ error: 'Failed to create event. Please try again later.' });
+  }
+});
+
+// Update an event
+app.put('/event/:id', authenticateFormateur, checkEventOwnership, async (req, res) => {
+  try {
+    // Validate request body
+    const { error, value } = eventSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const { id } = req.params;
+    const { title, description, date, startTime, endTime, todos } = value;
+
+    // Delete existing todos
+    await prisma.todo.deleteMany({ where: { eventId: id } });
+
+    // Update event and create new todos
+    const updatedEvent = await prisma.event.update({
+      where: { id },
+      data: {
+        title,
+        description,
+        date: new Date(date), // Convert date to Date object
+        startTime, // Store as string (e.g., "10:00")
+        endTime, // Store as string (e.g., "11:00")
+        todos: {
+          create: todos.map((todo) => ({
+            text: todo.text,
+            completed: false
+          }))
+        }
+      },
+      include: { todos: true }
+    });
+
+    res.json(updatedEvent);
+  } catch (error) {
+    console.error('Error updating event:', error);
+    res.status(500).json({ error: 'Failed to update event. Please try again later.' });
+  }
+});
+
+// Delete an event
+app.delete('/event/:id', authenticateFormateur, checkEventOwnership, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Delete event (todos will be automatically deleted due to cascade)
+    await prisma.event.delete({ where: { id } });
+
+    res.json({ message: 'Event deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    res.status(500).json({ error: 'Failed to delete event. Please try again later.' });
+  }
+});
+
+// Toggle todo completion status
+app.patch('/todos/:id', authenticateFormateur, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const todo = await prisma.todo.findUnique({
+      where: { id },
+      include: { event: true }
+    });
+
+    if (!todo || !todo.event || todo.event.userId !== req.user.id) {
+      return res.status(404).json({ error: 'Todo not found or unauthorized' });
+    }
+
+    const updatedTodo = await prisma.todo.update({
+      where: { id },
+      data: { completed: !todo.completed }
+    });
+
+    res.json(updatedTodo);
+  } catch (error) {
+    console.error('Error updating todo:', error);
+    res.status(500).json({ error: 'Failed to update todo. Please try again later.' });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+app.put('/apii/test-attempts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { score } = req.body;
+
+    const updatedTestAttempt = await prisma.testAttempt.update({
+      where: { id },
+      data: { 
+        score,
+        correctAnswers: score // Since we're now using direct score instead of percentage
+      }
+    });
+
+    res.json(updatedTestAttempt);
+  } catch (error) {
+    console.error('Error updating test attempt:', error);
+    res.status(500).json({ error: 'Failed to update test attempt' });
+  }
+});
+
+// Delete test attempt
+app.delete('/apii/test-attempts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.testAttempt.delete({ where: { id } });
+    res.json({ message: 'Test attempt deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting test attempt:', error);
+    res.status(500).json({ error: 'Failed to delete test attempt' });
+  }
+});
+
+// Update attendance
+app.put('/apii/attendance/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isPresent } = req.body;
+
+    const updatedAttendance = await prisma.attendance.update({
+      where: { id },
+      data: { isPresent }
+    });
+
+    res.json(updatedAttendance);
+  } catch (error) {
+    console.error('Error updating attendance:', error);
+    res.status(500).json({ error: 'Failed to update attendance' });
+  }
+});
+
+// Get operateur details with tests and attendance
+app.get('/apii/operateur/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        formateur: true,
+        memberOfGroups: {
+          include: {
+            _count: {
+              select: { members: true }
+            }
+          }
+        },
+        testAttempts: {
+          include: {
+            test: true
+          },
+          orderBy: {
+            completedAt: 'desc'
+          }
+        },
+        Attendance: {
+          orderBy: {
+            date: 'desc'
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const group = user.memberOfGroups;
+    
+    // Transform the data to match the frontend structure
+    const transformedUser = {
+      ...user,
+      group: group ? {
+        id: group.id,
+        name: group.name,
+        description: group.description,
+        startDate: group.startDate,
+        endDate: group.endDate,
+        status: group.status,
+        memberCount: group._count.members
+      } : null,
+      tests: user.testAttempts.map(attempt => ({
+        id: attempt.id,
+        title: attempt.test.title,
+        date: attempt.completedAt,
+        score: attempt.score,
+        correctAnswers: attempt.correctAnswers,
+        totalQuestions: attempt.test.totalQuestions,
+        testPoints: attempt.test.testPoints,
+        difficulty: attempt.test.difficulty
+      })),
+      attendance: user.Attendance.map(record => ({
+        id: record.id,
+        date: record.date,
+        isPresent: record.isPresent
+      }))
+    };
+
+    res.json(transformedUser);
+  } catch (error) {
+    console.error('Error fetching fetching operateur details:', error);
+    res.status(500).json({ error: 'Failed to fetch operateur details' });
+  }
+});
+
+
+
+
+
+
+
+
+
+app.get('/api/analytics/operateurs/gender', authenticateFormateur,async (req, res) => {
+  try {
+    const { id } = req.user;
+    const stats = await prisma.user.groupBy({
+      by: ['gender'],
+      where: {
+        formateurId: id,
+        role: 'OPERATEUR'
+      },
+      _count: {
+        gender: true
+      }
+    });
+
+    const formattedStats = stats.map(stat => ({
+      genre: stat.gender === 'MALE' ? 'Homme' : 'Femme',
+      nombre: stat._count.gender
+    }));
+
+    res.json(formattedStats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Statistiques des tests
+app.get('/api/analytics/tests/stats',authenticateFormateur, async (req, res) => {
+  try {
+    const { id } = req.user;
+    const tests = await prisma.test.findMany({
+      where: {
+        creatorId: id
+      },
+      include: {
+        testAttempts: true
+      }
+    });
+
+    const stats = tests.map(test => ({
+      titre: test.title,
+      tentatives: test.testAttempts.length,
+      moyenneScore: test.testAttempts.length > 0
+        ? test.testAttempts.reduce((acc, curr) => acc + curr.score, 0) / test.testAttempts.length
+        : 0
+    }));
+
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Statistiques de présence
+app.get('/api/analytics/attendance',authenticateFormateur, async (req, res) => {
+  try {
+    const { id } = req.user;
+    const attendance = await prisma.attendance.groupBy({
+      by: ['date'],
+      where: {
+        group: {
+          leaderId: id
+        }
+      },
+      _count: {
+        _all: true,
+        isPresent: true
+      }
+    });
+
+    const stats = attendance.map(day => ({
+      date: day.date.toISOString().split('T')[0],
+      presents: day._count.isPresent,
+      absents: day._count._all - day._count.isPresent
+    }));
+
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Statistiques des groupes
+app.get('/api/analytics/groups',authenticateFormateur, async (req, res) => {
+  try {
+    const { id } = req.user;
+    const groups = await prisma.group.findMany({
+      where: {
+        leaderId: id
+      },
+      include: {
+        _count: {
+          select: {
+            members: true
+          }
+        }
+      }
+    });
+
+    const stats = groups.map(group => ({
+      nom: group.name,
+      nombreOperateurs: group._count.members
+    }));
+
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Nouvelles routes...
+// Distribution des difficultés des tests
+app.get('/api/analytics/tests/difficulty',authenticateFormateur, async (req, res) => {
+  try {
+    const { id } = req.user;
+    const stats = await prisma.test.groupBy({
+      by: ['difficulty'],
+      where: {
+        creatorId: id
+      },
+      _count: {
+        _all: true
+      }
+    });
+
+    const formattedStats = stats.map(stat => ({
+      difficulte: stat.difficulty === 'EASY' ? 'Facile' : 
+                  stat.difficulty === 'MEDIUM' ? 'Moyen' : 'Difficile',
+      nombre: stat._count._all
+    }));
+
+    res.json(formattedStats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Performance mensuelle
+app.get('/api/analytics/performance/monthly',authenticateFormateur, async (req, res) => {
+  try {
+    const { id } = req.user;
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const attempts = await prisma.testAttempt.findMany({
+      where: {
+        test: {
+          creatorId: id
+        },
+        completedAt: {
+          gte: sixMonthsAgo
+        }
+      },
+      include: {
+        test: true
+      }
+    });
+
+    const monthlyStats = attempts.reduce((acc, attempt) => {
+      const month = format(new Date(attempt.completedAt), 'MMM yyyy', { locale: fr });
+      if (!acc[month]) {
+        acc[month] = {
+          scores: [],
+          success: 0,
+          total: 0
+        };
+      }
+      acc[month].scores.push(attempt.score);
+      acc[month].success += attempt.score >= (attempt.test.testPoints / 2) ? 1 : 0;
+      acc[month].total += 1;
+      return acc;
+    }, {});
+
+    const stats = Object.entries(monthlyStats).map(([month, data]) => ({
+      mois: month,
+      moyenneScore: data.scores.reduce((a, b) => a + b, 0) / data.scores.length,
+      tauxReussite: (data.success / data.total) * 100
+    }));
+
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Compétences des opérateurs
+app.get('/api/analytics/operateurs/skills',authenticateFormateur, async (req, res) => {
+  try {
+    const { id } = req.user;
+    const tests = await prisma.test.findMany({
+      where: {
+        creatorId: id
+      },
+      include: {
+        testAttempts: true
+      }
+    });
+
+    const categoriesScores = tests.reduce((acc, test) => {
+      if (!acc[test.category || 'Non catégorisé']) {
+        acc[test.category || 'Non catégorisé'] = {
+          scores: [],
+          total: 0
+        };
+      }
+      
+      test.testAttempts.forEach(attempt => {
+        acc[test.category || 'Non catégorisé'].scores.push(
+          (attempt.score / test.testPoints) * 100
+        );
+      });
+      
+      return acc;
+    }, {});
+
+    const stats = Object.entries(categoriesScores).map(([category, data]) => ({
+      categorie: category,
+      score: data.scores.reduce((a, b) => a + b, 0) / data.scores.length
+    }));
+
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Activité hebdomadaire
+app.get('/api/analytics/activity',authenticateFormateur, async (req, res) => {
+  try {
+    const { id } = req.user;
+    const fourWeeksAgo = new Date();
+    fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+
+    const [tests, attendance, events] = await Promise.all([
+      prisma.test.findMany({
+        where: {
+          creatorId: id,
+          createdAt: {
+            gte: fourWeeksAgo
+          }
+        }
+      }),
+      prisma.attendance.findMany({
+        where: {
+          group: {
+            leaderId: id
+          },
+          date: {
+            gte: fourWeeksAgo
+          }
+        }
+      }),
+      prisma.event.findMany({
+        where: {
+          userId: id,
+          date: {
+            gte: fourWeeksAgo
+          }
+        }
+      })
+    ]);
+
+    const weeklyStats = [...Array(4)].map((_, index) => {
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - (21 - (index * 7)));
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+
+      return {
+        semaine: `S${index + 1}`,
+        tests: tests.filter(t => 
+          new Date(t.createdAt) >= weekStart && new Date(t.createdAt) <= weekEnd
+        ).length,
+        presences: attendance.filter(a => 
+          new Date(a.date) >= weekStart && new Date(a.date) <= weekEnd
+        ).length,
+        evenements: events.filter(e => 
+          new Date(e.date) >= weekStart && new Date(e.date) <= weekEnd
+        ).length
+      };
+    });
+
+    res.json(weeklyStats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+// Ajouter cette nouvelle route à votre fichier backend/src/index.js existant
+
+// Activités du jour pour un formateur
+
+// app.get('/api/formateur/activities/today',authenticateFormateur, async (req, res) => {
+//   try {
+//     const { id } = req.user;
+//     const today = new Date();
+//     today.setHours(0, 0, 0, 0);
+//     const tomorrow = new Date(today);
+//     tomorrow.setDate(tomorrow.getDate() + 1);
+
+//     // Récupérer tous les types d'activités en parallèle
+//     const [tests, attendances, events] = await Promise.all([
+//       // Tests créés ou programmés aujourd'hui
+//       prisma.test.findMany({
+//         where: {
+//           creatorId: id,
+//           OR: [
+//             { createdAt: { gte: today, lt: tomorrow } },
+//             { open_time: { gte: today, lt: tomorrow } }
+//           ]
+//         },
+//         include: {
+//           testAttempts: true
+//         }
+//       }),
+
+//       // Présences enregistrées aujourd'hui
+//       prisma.attendance.findMany({
+//         where: {
+//           group: {
+//             leaderId: id
+//           },
+//           date: {
+//             gte: today,
+//             lt: tomorrow
+//           }
+//         },
+//         include: {
+//           group: true
+//         }
+//       }),
+
+//       // Événements programmés aujourd'hui
+//       prisma.event.findMany({
+//         where: {
+//           userId: id,
+//           date: {
+//             gte: today,
+//             lt: tomorrow
+//           }
+//         }
+//       })
+//     ]);
+
+//     // Transformer les données en format unifié
+//     const activities = [
+//       // Transformer les tests
+//       ...tests.map(test => ({
+//         type: 'test',
+//         title: test.title,
+//         time: test.open_time ? 
+//           new Date(test.open_time).toLocaleTimeString('fr-FR', { 
+//             hour: '2-digit', 
+//             minute: '2-digit' 
+//           }) : 
+//           new Date(test.createdAt).toLocaleTimeString('fr-FR', { 
+//             hour: '2-digit', 
+//             minute: '2-digit' 
+//           }),
+//         status: test.status === 'CLOSE' ? 'completed' : 
+//                 test.status === 'OPEN' ? 'in_progress' : 'pending',
+//         details: {
+//           participants: test.testAttempts.length,
+//           score: test.testAttempts.length > 0 ? 
+//             Math.round(test.testAttempts.reduce((acc, curr) => acc + curr.score, 0) / test.testAttempts.length) : 
+//             null
+//         }
+//       })),
+
+//       // Transformer les présences
+//       ...attendances.map(attendance => ({
+//         type: 'attendance',
+//         title: `Présence - ${attendance.group.name}`,
+//         time: new Date(attendance.date).toLocaleTimeString('fr-FR', { 
+//           hour: '2-digit', 
+//           minute: '2-digit' 
+//         }),
+//         status: 'completed',
+//         details: {
+//           participants: attendance.group._count?.members || 0
+//         }
+//       })),
+
+//       // Transformer les événements
+//       ...events.map(event => ({
+//         type: 'event',
+//         title: event.title,
+//         time: event.startTime,
+//         status: new Date() > new Date(`${event.date}T${event.endTime}`) ? 'completed' :
+//                 new Date() > new Date(`${event.date}T${event.startTime}`) ? 'in_progress' : 'pending',
+//         details: {
+//           duration: `${event.startTime} - ${event.endTime}`,
+//           location: event.description
+//         }
+//       }))
+//     ];
+
+//     // Trier les activités par heure
+//     activities.sort((a, b) => {
+//       const timeA = a.time.split(':').map(Number);
+//       const timeB = b.time.split(':').map(Number);
+//       return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
+//     });
+
+//     res.json(activities);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+
+
+
+app.get('/api/formateur/activities/today', authenticateFormateur, async (req, res) => {
+  try {
+    const { id } = req.user;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Fetch all activities in parallel
+    const [tests, attendances, events, groupActivities, profileUpdates] = await Promise.all([
+      prisma.test.findMany({
+        where: {
+          creatorId: id,
+          OR: [
+            { createdAt: { gte: today, lt: tomorrow } },
+            { open_time: { gte: today, lt: tomorrow } },
+          ],
+        },
+        include: {
+          testAttempts: true,
+        },
+      }),
+      prisma.attendance.findMany({
+        where: {
+          group: {
+            leaderId: id,
+          },
+          date: {
+            gte: today,
+            lt: tomorrow,
+          },
+        },
+        include: {
+          group: true,
+        },
+      }),
+      prisma.event.findMany({
+        where: {
+          userId: id,
+          date: {
+            gte: today,
+            lt: tomorrow,
+          },
+        },
+      }),
+      prisma.group.findMany({
+        where: {
+          leaderId: id,
+          OR: [
+            { createdAt: { gte: today, lt: tomorrow } },
+            { updatedAt: { gte: today, lt: tomorrow } },
+          ],
+        },
+        include: {
+          members: true,
+        },
+      }),
+      prisma.user.findMany({
+        where: {
+          id: id,
+          updatedAt: {
+            gte: today,
+            lt: tomorrow,
+          },
+        },
+      }),
+    ]);
+
+    // Transform data into a unified format
+    const activities = [
+      ...tests.map((test) => ({
+        type: 'test',
+        title: test.title,
+        time: test.open_time
+          ? new Date(test.open_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+          : new Date(test.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        status: test.status === 'CLOSE' ? 'completed' : test.status === 'OPEN' ? 'in_progress' : 'pending',
+        details: {
+          participants: test.testAttempts.length,
+          score:
+            test.testAttempts.length > 0
+              ? Math.round(
+                  test.testAttempts.reduce((acc, curr) => acc + curr.score, 0) / test.testAttempts.length
+                )
+              : null,
+        },
+      })),
+      ...attendances.map((attendance) => ({
+        type: 'attendance',
+        title: `Présence - ${attendance.group.name}`,
+        time: new Date(attendance.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        status: 'completed',
+        details: {
+          participants: attendance.group._count?.members || 0,
+        },
+      })),
+      ...events.map((event) => ({
+        type: 'event',
+        title: event.title,
+        time: event.startTime,
+        status:
+          new Date() > new Date(`${event.date}T${event.endTime}`)
+            ? 'completed'
+            : new Date() > new Date(`${event.date}T${event.startTime}`)
+            ? 'in_progress'
+            : 'pending',
+        details: {
+          duration: `${event.startTime} - ${event.endTime}`,
+          location: event.description,
+        },
+      })),
+      ...groupActivities.map((group) => ({
+        type: 'group',
+        title: `Groupe - ${group.name}`,
+        time: new Date(group.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        status: group.updatedAt > group.createdAt ? 'updated' : 'created',
+        details: {
+          members: group.members.length,
+        },
+      })),
+      ...profileUpdates.map((profile) => ({
+        type: 'profile',
+        title: `Mise à jour de profil`,
+        time: new Date(profile.updatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        status: 'updated',
+        details: {
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+        },
+      })),
+    ];
+
+    // Sort activities by time
+    activities.sort((a, b) => {
+      const timeA = a.time.split(':').map(Number);
+      const timeB = b.time.split(':').map(Number);
+      return timeA[0] * 60 + timeA[1] - (timeB[0] * 60 + timeB[1]);
+    });
+
+    res.json(activities);
+  } catch (error) {
+    console.error('Error fetching activities:', error);
+    res.status(500).json({ error: 'An error occurred while fetching activities' });
+  }
+});
 
 
 

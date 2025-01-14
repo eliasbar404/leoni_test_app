@@ -40,6 +40,7 @@ const userService = {
   },
 
   createUser: async (formData: FormData) => {
+    
     try {
       await api.post('/admin/users/create', formData, {
         headers: {
@@ -85,6 +86,7 @@ const initialFormState: UserFormData = {
   image: '',
   address: '',
   phone: '',
+  gender:'FEMALE',
   groupeId: null,
   formateurId:null
 };
@@ -97,7 +99,7 @@ const CreateUsersPage: React.FC = () => {
   
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'formateurId' ? (value ? parseInt(value, 10) : null) : value, // Parse as an integer if formateurId
+      [name]: name === 'formateurId' ? value : value, // Parse as an integer if formateurId
     }));
   };
 
@@ -207,6 +209,12 @@ const CreateUsersPage: React.FC = () => {
               placeholder="Entrez le mot de passe"
               required
             />
+
+            <label htmlFor="gender">Genre</label>
+            <select name="gender" id="gender" value={formData.gender} onChange={handleInputChange}>
+              <option value="MALE">Homme</option>
+              <option value="FEMALE">Femme</option>
+            </select>
 
             <RoleSelect
               value={formData.role}

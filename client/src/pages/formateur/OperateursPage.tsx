@@ -4,9 +4,10 @@ import Swal from 'sweetalert2';
 import { User } from '../../types/User';
 import { Link } from 'react-router-dom';
 
-import ProfileCard from '../../components/ProfileCard';
+// import ProfileCard from '../../components/ProfileCard';
 
-import {  Modal } from "flowbite-react";
+// import {  Modal } from "flowbite-react";
+
 
 
 import axios from 'axios';
@@ -198,11 +199,11 @@ interface UserRowProps {
 }
 
 const UserRow: React.FC<UserRowProps> = ({ user, onDelete }) => {
-  const [openModal, setOpenModal] = useState(false);
+  // const [openModal, setOpenModal] = useState(false);
   return (
     <tr className="hover:bg-gray-50">
       <td className="px-6 py-4 whitespace-nowrap">
-          <Modal show={openModal} onClose={() => setOpenModal(false)}>
+          {/* <Modal show={openModal} onClose={() => setOpenModal(false)}>
           
         <Modal.Header></Modal.Header>
         <Modal.Body>
@@ -210,18 +211,18 @@ const UserRow: React.FC<UserRowProps> = ({ user, onDelete }) => {
 
         </Modal.Body>
 
-      </Modal>
+      </Modal> */}
               <div className="flex items-center">
           <img
-          onClick={() => setOpenModal(true)}
+          // onClick={() => setOpenModal(true)}
             src={user.image}
             alt={`${user.firstName} ${user.lastName}`}
             className="h-10 w-10 rounded-full object-cover"
           />
           <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900">
+            <Link to={`/formateur/dashboard/operateur/${user.id}`} className="text-sm font-medium text-gray-900" >
               {user.firstName} {user.lastName}
-            </div>
+            </Link>
           </div>
         </div>
     {/* </Popover> */}

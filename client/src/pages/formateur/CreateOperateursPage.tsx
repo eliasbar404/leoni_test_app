@@ -68,6 +68,7 @@ const initialFormState: UserFormData = {
   address:'',
   phone:'',
   groupeId:"",
+  gender:"MALE",
   formateurId:""
 };
 
@@ -190,6 +191,12 @@ const CreateOperateurPage: React.FC = () => {
               onChange={handleInputChange}
               placeholder="Entrez le numéro de téléphone"
             />
+
+            <label htmlFor="gender">Genre</label>
+            <select name="gender" id="gender" value={formData.gender} onChange={handleInputChange}>
+              <option value="MALE">Homme</option>
+              <option value="FEMALE">Femme</option>
+            </select>
           </div>
 
           <div className="flex flex-col gap-4">
