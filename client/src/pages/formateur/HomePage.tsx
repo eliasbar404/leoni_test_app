@@ -6,6 +6,7 @@ import TodayActivities from '../../components/TodayActivities';
 
 
 
+
 const HomePage: React.FC = () => {
 
 
@@ -54,6 +55,7 @@ const HomePage: React.FC = () => {
           </div>
 
           <TodayActivities/>
+
 
 
         </div>

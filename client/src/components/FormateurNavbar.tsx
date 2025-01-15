@@ -3,6 +3,7 @@ import { UserCircle2 ,UserCog, LogOut } from 'lucide-react';
 import { useFormateurProfile } from '../hooks/useFormateurProfile';
 import { Link} from 'react-router-dom';
 import { useLogout } from '../hooks/useLogout';
+import FormateurNotifications from './FormateurNotifications';
 
 
 const FormateurNavbar = () => {
@@ -15,6 +16,7 @@ const FormateurNavbar = () => {
       </div>
       
       <div className="flex items-center gap-4">
+        <FormateurNotifications/>
         <UserProfile 
           profileData={profileData} 
           loading={loading} 

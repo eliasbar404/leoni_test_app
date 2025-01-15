@@ -10,6 +10,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { time } from 'console';
 import Joi from "joi";
+import { Server } from 'socket.io';
+import http from "http"
 
 
 
@@ -20,6 +22,39 @@ const __dirname = path.dirname(__filename);
 
 const prisma = new PrismaClient();
 const app = express();
+
+
+
+// Initialize
+// Create an HTTP server
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+const io = new Server(server, {
+  cors: {
+    origin: 'http://localhost:5173', // Replace with your frontend URL
+    methods: ['GET', 'POST'],
+    credentials: true, // Allow credentials (cookies, authorization headers)
+  },
+});
+
+
+// Socket.IO connection event
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+
+
+
+
+
+
+
 app.use('/uploads', express.static('uploads'));
 app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.json({ limit: '10mb' })); // Adjust the limit as needed
@@ -1569,6 +1604,25 @@ app.post("/quiz-attempts", authenticateOPERATEUR, async (req, res) => {
       },
     });
 
+
+
+    const operateur = await prisma.user.findUnique({
+      where:{id:userId}
+    });
+
+    const test   = await prisma.test.findUnique({
+      where:{id:quizId}
+    })
+
+
+    io.emit('testAttemptSaved', {
+      operateurName:`${operateur.lastName} ${operateur.firstName}`,
+      testName:test.title,
+      score,
+      testPoints:test.testPoints,
+      date: quizAttempt.createdAt
+    });
+
     return res.status(201).json({ success: true, quizAttempt });
   } catch (error) {
     console.error("Error submitting quiz attempt:", error);
@@ -2438,206 +2492,6 @@ app.post('/api/attendance',authenticateFormateur, async (req, res) => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// -----------------------------------------------------
-// -----------------------------------------------------
-//------------- Events and todo ------------------------
-// -----------------------------------------------------
-// -----------------------------------------------------
-
-
-// app.get('/events', authenticateFormateur, async (req, res) => {
-
-//   try {
-//     const events = await prisma.event.findMany({
-//       where: {
-//         userId: req.user.id
-//       },
-//       include: {
-//         todos: true
-//       },
-//       orderBy: {
-//         date: 'asc'
-//       }
-//     });
-//     res.json(events);
-//   } catch (error) {
-//     res.status(500).json({ error: 'Failed to fetch events' });
-//   }
-// });
-
-// // Create a new event
-// app.post('/events', authenticateFormateur, async (req, res) => {
-//   try {
-//     const { title, description, date, startTime, endTime, todos } = req.body;
-
-//     const event = await prisma.event.create({
-//       data: {
-//         title,
-//         description,
-//         date: new Date(date),
-//         startTime: new Date(startTime),
-//         endTime: new Date(endTime),
-//         userId: req.user.id,
-//         todos: {
-//           create: todos.map((todo) => ({
-//             text: todo.text,
-//             completed: false
-//           }))
-//         }
-//       },
-//       include: {
-//         todos: true
-//       }
-//     });
-
-//     res.status(201).json(event);
-//   } catch (error) {
-//     res.status(500).json({ error: 'Failed to create event' });
-//   }
-// });
-
-// // Update an event
-// app.put('/event/:id', authenticateFormateur, async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const { title, description, date, startTime, endTime, todos } = req.body;
-
-//     // Verify event belongs to the formateur
-//     const existingEvent = await prisma.event.findFirst({
-//       where: {
-//         id,
-//         userId: req.user.id
-//       }
-//     });
-
-//     if (!existingEvent) {
-//       return res.status(404).json({ error: 'Event not found' });
-//     }
-
-//     // Delete existing todos
-//     await prisma.todo.deleteMany({
-//       where: {
-//         eventId: id
-//       }
-//     });
-
-//     // Update event and create new todos
-//     const updatedEvent = await prisma.event.update({
-//       where: { id },
-//       data: {
-//         title,
-//         description,
-//         date: new Date(date),
-//         startTime: new Date(startTime),
-//         endTime: new Date(endTime),
-//         todos: {
-//           create: todos.map((todo) => ({
-//             text: todo.text,
-//             completed: false
-//           }))
-//         }
-//       },
-//       include: {
-//         todos: true
-//       }
-//     });
-
-//     res.json(updatedEvent);
-//   } catch (error) {
-//     res.status(500).json({ error: 'Failed to update event' });
-//   }
-// });
-
-// // Delete an event
-// app.delete('/event/:id', authenticateFormateur, async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     // Verify event belongs to the formateur
-//     const existingEvent = await prisma.event.findFirst({
-//       where: {
-//         id,
-//         userId: req.user.id
-//       }
-//     });
-
-//     if (!existingEvent) {
-//       return res.status(404).json({ error: 'Event not found' });
-//     }
-
-//     // Delete event (todos will be automatically deleted due to cascade)
-//     await prisma.event.delete({
-//       where: { id }
-//     });
-
-//     res.json({ message: 'Event deleted successfully' });
-//   } catch (error) {
-//     res.status(500).json({ error: 'Failed to delete event' });
-//   }
-// });
-
-// // Toggle todo completion status
-// app.patch('/todos/:id', authenticateFormateur, async (req, res) => {
-//   try {
-//     const { id } = req.params;
-    
-//     const todo = await prisma.todo.findUnique({
-//       where: { id },
-//       include: {
-//         event: true
-//       }
-//     });
-
-//     if (!todo || todo.event.userId !== req.user.id) {
-//       return res.status(404).json({ error: 'Todo not found' });
-//     }
-
-//     const updatedTodo = await prisma.todo.update({
-//       where: { id },
-//       data: {
-//         completed: !todo.completed
-//       }
-//     });
-
-//     res.json(updatedTodo);
-//   } catch (error) {
-//     res.status(500).json({ error: 'Failed to update todo' });
-//   }
-// });
-
-
-
-
-
-
-
-
-
-
-
 // Input validation schema for creating/updating events
 const eventSchema = Joi.object({
   title: Joi.string().required(),
@@ -3254,135 +3108,6 @@ app.get('/api/analytics/activity',authenticateFormateur, async (req, res) => {
 
 
 
-
-
-
-
-// Ajouter cette nouvelle route à votre fichier backend/src/index.js existant
-
-// Activités du jour pour un formateur
-
-// app.get('/api/formateur/activities/today',authenticateFormateur, async (req, res) => {
-//   try {
-//     const { id } = req.user;
-//     const today = new Date();
-//     today.setHours(0, 0, 0, 0);
-//     const tomorrow = new Date(today);
-//     tomorrow.setDate(tomorrow.getDate() + 1);
-
-//     // Récupérer tous les types d'activités en parallèle
-//     const [tests, attendances, events] = await Promise.all([
-//       // Tests créés ou programmés aujourd'hui
-//       prisma.test.findMany({
-//         where: {
-//           creatorId: id,
-//           OR: [
-//             { createdAt: { gte: today, lt: tomorrow } },
-//             { open_time: { gte: today, lt: tomorrow } }
-//           ]
-//         },
-//         include: {
-//           testAttempts: true
-//         }
-//       }),
-
-//       // Présences enregistrées aujourd'hui
-//       prisma.attendance.findMany({
-//         where: {
-//           group: {
-//             leaderId: id
-//           },
-//           date: {
-//             gte: today,
-//             lt: tomorrow
-//           }
-//         },
-//         include: {
-//           group: true
-//         }
-//       }),
-
-//       // Événements programmés aujourd'hui
-//       prisma.event.findMany({
-//         where: {
-//           userId: id,
-//           date: {
-//             gte: today,
-//             lt: tomorrow
-//           }
-//         }
-//       })
-//     ]);
-
-//     // Transformer les données en format unifié
-//     const activities = [
-//       // Transformer les tests
-//       ...tests.map(test => ({
-//         type: 'test',
-//         title: test.title,
-//         time: test.open_time ? 
-//           new Date(test.open_time).toLocaleTimeString('fr-FR', { 
-//             hour: '2-digit', 
-//             minute: '2-digit' 
-//           }) : 
-//           new Date(test.createdAt).toLocaleTimeString('fr-FR', { 
-//             hour: '2-digit', 
-//             minute: '2-digit' 
-//           }),
-//         status: test.status === 'CLOSE' ? 'completed' : 
-//                 test.status === 'OPEN' ? 'in_progress' : 'pending',
-//         details: {
-//           participants: test.testAttempts.length,
-//           score: test.testAttempts.length > 0 ? 
-//             Math.round(test.testAttempts.reduce((acc, curr) => acc + curr.score, 0) / test.testAttempts.length) : 
-//             null
-//         }
-//       })),
-
-//       // Transformer les présences
-//       ...attendances.map(attendance => ({
-//         type: 'attendance',
-//         title: `Présence - ${attendance.group.name}`,
-//         time: new Date(attendance.date).toLocaleTimeString('fr-FR', { 
-//           hour: '2-digit', 
-//           minute: '2-digit' 
-//         }),
-//         status: 'completed',
-//         details: {
-//           participants: attendance.group._count?.members || 0
-//         }
-//       })),
-
-//       // Transformer les événements
-//       ...events.map(event => ({
-//         type: 'event',
-//         title: event.title,
-//         time: event.startTime,
-//         status: new Date() > new Date(`${event.date}T${event.endTime}`) ? 'completed' :
-//                 new Date() > new Date(`${event.date}T${event.startTime}`) ? 'in_progress' : 'pending',
-//         details: {
-//           duration: `${event.startTime} - ${event.endTime}`,
-//           location: event.description
-//         }
-//       }))
-//     ];
-
-//     // Trier les activités par heure
-//     activities.sort((a, b) => {
-//       const timeA = a.time.split(':').map(Number);
-//       const timeB = b.time.split(':').map(Number);
-//       return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
-//     });
-
-//     res.json(activities);
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
-
-
-
-
 app.get('/api/formateur/activities/today', authenticateFormateur, async (req, res) => {
   try {
     const { id } = req.user;
@@ -3543,7 +3268,7 @@ app.get('/api/formateur/activities/today', authenticateFormateur, async (req, re
 
 // Start the server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 
