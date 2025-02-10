@@ -1113,9 +1113,6 @@ app.post('/formateur/quizzes', authenticateFormateur,multer({ storage }).any(), 
 
 
 
-
-
-
 app.put('/formateur/quizzes/:id', 
   authenticateFormateur,
   multer({ storage }).any(),
@@ -1139,12 +1136,7 @@ app.put('/formateur/quizzes/:id',
       const creatorId = req.user?.id;
       const parsedQuestions = JSON.parse(questions);
 
-      // Delete existing questions and answers
-      await prisma.question.deleteMany({
-        where: { testId: id }
-      });
-
-      // Update test and create new questions
+      // First update the test basic information
       const updatedTest = await prisma.test.update({
         where: { id },
         data: {
@@ -1159,33 +1151,87 @@ app.put('/formateur/quizzes/:id',
           close_time: closeTime ? new Date(new Date(closeTime).getTime() + 60 * 60 * 1000) : null,
           timeLimit: timeLimit ? parseInt(timeLimit, 10) : null,
           creatorId,
-          questions: {
-            create: parsedQuestions.map((question, questionIndex) => {
-              let imageUrl = null;
-              const imageFile = req.files?.find(file => 
-                file.fieldname === `questionImage_${questionIndex}`
-              );
-              
-              if (imageFile) {
-                imageUrl = `http://localhost:3000/uploads/${imageFile.filename}`;
-              }
+        }
+      });
 
-              return {
-                text: question.text,
-                point: parseFloat(question.point),
-                type: question.type,
-                imageUrl,
-                answers: {
-                  create: question.answers.map((answer, answerIndex) => ({
-                    text: answer.text,
-                    isCorrect: answer.isCorrect,
-                    answerNumber: question.type === 'IMAGE' ? answerIndex : null,
-                  })),
-                },
-              };
-            }),
-          },
-        },
+      // Get existing questions to compare
+      const existingQuestions = await prisma.question.findMany({
+        where: { testId: id },
+        include: { answers: true }
+      });
+
+      // Create a map of existing question IDs
+      const existingQuestionMap = new Map(
+        existingQuestions.map(q => [q.id, q])
+      );
+
+      // Process each question
+      for (const question of parsedQuestions) {
+        let imageUrl = question.imageUrl;
+        const imageFile = req.files?.find(file => 
+          file.fieldname === `questionImage_${parsedQuestions.indexOf(question)}`
+        );
+        
+        if (imageFile) {
+          imageUrl = `http://localhost:3000/uploads/${imageFile.filename}`;
+        }
+
+        const questionData = {
+          text: question.text,
+          point: parseFloat(question.point),
+          type: question.type,
+          imageUrl,
+        };
+
+        if (question.id && existingQuestionMap.has(question.id)) {
+          // Update existing question
+          await prisma.question.update({
+            where: { id: question.id },
+            data: {
+              ...questionData,
+              answers: {
+                deleteMany: {}, // Remove old answers
+                create: question.answers.map(answer => ({
+                  text: answer.text,
+                  isCorrect: answer.isCorrect,
+                  answerNumber: question.type.includes('IMAGE') ? answer.answerNumber : null,
+                }))
+              }
+            }
+          });
+          existingQuestionMap.delete(question.id);
+        } else {
+          // Create new question
+          await prisma.question.create({
+            data: {
+              ...questionData,
+              testId: id,
+              answers: {
+                create: question.answers.map(answer => ({
+                  text: answer.text,
+                  isCorrect: answer.isCorrect,
+                  answerNumber: question.type.includes('IMAGE') ? answer.answerNumber : null,
+                }))
+              }
+            }
+          });
+        }
+      }
+
+      // Delete questions that no longer exist in the updated version
+      if (existingQuestionMap.size > 0) {
+        await prisma.question.deleteMany({
+          where: {
+            id: {
+              in: Array.from(existingQuestionMap.keys())
+            }
+          }
+        });
+      }
+
+      // Fetch the final updated test with all relations
+      const finalTest = await prisma.test.findUnique({
+        where: { id },
         include: {
           questions: {
             include: {
@@ -1197,7 +1243,7 @@ app.put('/formateur/quizzes/:id',
 
       res.status(200).json({ 
         message: 'Test updated successfully', 
-        test: updatedTest 
+        test: finalTest 
       });
     } catch (error) {
       console.error('Update test error:', error);
@@ -1205,6 +1251,121 @@ app.put('/formateur/quizzes/:id',
     }
   }
 );
+
+// Add new endpoint for status-only updates
+app.patch('/formateur/quizzes/:id/status', 
+  authenticateFormateur,
+  async (req, res) => {
+    try {
+      const id = req.params.id;
+      const { status } = req.body;
+
+      const updatedTest = await prisma.test.update({
+        where: { id },
+        data: { status }
+      });
+
+      res.status(200).json({ 
+        message: 'Test status updated successfully', 
+        test: updatedTest 
+      });
+    } catch (error) {
+      console.error('Update test status error:', error);
+      res.status(500).json({ error: 'Failed to update test status' });
+    }
+  }
+);
+
+
+// app.put('/formateur/quizzes/:id', 
+//   authenticateFormateur,
+//   multer({ storage }).any(),
+//   async (req, res) => {
+//     try {
+//       const id = req.params.id;
+//       const { 
+//         title, 
+//         description, 
+//         code, 
+//         category, 
+//         difficulty, 
+//         testPoints, 
+//         status,
+//         openTime, 
+//         closeTime, 
+//         timeLimit, 
+//         questions 
+//       } = req.body;
+
+//       const creatorId = req.user?.id;
+//       const parsedQuestions = JSON.parse(questions);
+
+//       // Delete existing questions and answers
+//       await prisma.question.deleteMany({
+//         where: { testId: id }
+//       });
+
+//       // Update test and create new questions
+//       const updatedTest = await prisma.test.update({
+//         where: { id },
+//         data: {
+//           title,
+//           description,
+//           code,
+//           category,
+//           difficulty,
+//           status,
+//           testPoints: parseInt(testPoints),
+//           open_time: openTime ? new Date(new Date(openTime).getTime() + 60 * 60 * 1000) : null,
+//           close_time: closeTime ? new Date(new Date(closeTime).getTime() + 60 * 60 * 1000) : null,
+//           timeLimit: timeLimit ? parseInt(timeLimit, 10) : null,
+//           creatorId,
+//           questions: {
+//             create: parsedQuestions.map((question, questionIndex) => {
+//               let imageUrl = null;
+//               const imageFile = req.files?.find(file => 
+//                 file.fieldname === `questionImage_${questionIndex}`
+//               );
+              
+//               if (imageFile) {
+//                 imageUrl = `http://localhost:3000/uploads/${imageFile.filename}`;
+//               }
+
+//               return {
+//                 text: question.text,
+//                 point: parseFloat(question.point),
+//                 type: question.type,
+//                 imageUrl,
+//                 answers: {
+//                   create: question.answers.map((answer, answerIndex) => ({
+//                     text: answer.text,
+//                     isCorrect: answer.isCorrect,
+//                     answerNumber: question.type === 'IMAGE' ? answerIndex : null,
+//                   })),
+//                 },
+//               };
+//             }),
+//           },
+//         },
+//         include: {
+//           questions: {
+//             include: {
+//               answers: true
+//             }
+//           }
+//         }
+//       });
+
+//       res.status(200).json({ 
+//         message: 'Test updated successfully', 
+//         test: updatedTest 
+//       });
+//     } catch (error) {
+//       console.error('Update test error:', error);
+//       res.status(500).json({ error: 'Failed to update test' });
+//     }
+//   }
+// );
 
 
 

@@ -327,9 +327,9 @@ function App() {
     <div className="min-h-screen bg-gray-100 p-8 rounded-md shadow-lg">
       <h1 className="text-3xl font-bold text-gray-800 mb-8">Tableau de Bord Formateur</h1>
       
-      <div className="flex flex-col gap-5 p-20">
+      <div className="grid grid-cols-2 gap-5 p-20">
         {/* Répartition par Genre */}
-        <div className="bg-white p-6 rounded-lg shadow-lg">
+        <div className="bg-white p-6 rounded-lg shadow-lg w-[400px]">
           <div className="flex items-center mb-4">
             <Users className="w-6 h-6 text-blue-600 mr-2" />
             <h2 className="text-xl font-semibold">Répartition par Genre</h2>

@@ -55,13 +55,13 @@ interface UserData {
 
 const styles = StyleSheet.create({
   page: { 
-    padding: 30,
+    padding: 10,
     backgroundColor: '#ffffff'
   },
   header: {
     flexDirection: 'row',
-    marginBottom: 30,
-    paddingBottom: 10,
+    marginBottom: 10,
+    paddingBottom: 3,
     borderBottom: '2pt solid #2563eb',
   },
   headerLeft: {
@@ -77,21 +77,21 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: '#1e3a8a',
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 2.5,
   },
   subtitle: {
     fontSize: 14,
     color: '#6b7280',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   section: {
-    marginBottom: 20,
-    padding: 15,
+    marginBottom: 2,
+    padding: 5,
     backgroundColor: '#f8fafc',
     borderRadius: 8,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 10,
     color: '#2563eb',
     marginBottom: 10,
     fontWeight: 'bold',
@@ -100,11 +100,11 @@ const styles = StyleSheet.create({
   infoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 10,
+    marginBottom: 50,
   },
   infoItem: {
     width: '50%',
-    marginBottom: 8,
+    marginBottom: 5,
   },
   label: {
     fontSize: 10,
@@ -116,19 +116,19 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
   table: {
-    width: '100%',
-    marginBottom: 15,
+    width: '300px',
+    marginBottom: 5,
   },
   tableHeader: {
     flexDirection: 'row',
     backgroundColor: '#2563eb',
-    padding: 8,
+    // padding: 8,
     borderTopLeftRadius: 6,
     borderTopRightRadius: 6,
   },
   tableHeaderCell: {
     color: '#ffffff',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: 'bold',
     flex: 1,
     textAlign: 'center',
@@ -137,24 +137,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
-    padding: 8,
+    // padding: 8,
     backgroundColor: '#ffffff',
   },
   tableCell: {
-    fontSize: 11,
+    fontSize: 10,
     flex: 1,
     textAlign: 'center',
   },
   signature: {
-    marginTop: 10,
-    padding: 15,
+    // marginTop: 10,
+    // padding: 15,
     backgroundColor: '#f8fafc',
     borderRadius: 8,
   },
   signatureTitle: {
     fontSize: 14,
     color: '#2563eb',
-    marginBottom: 10,
+    // marginBottom: 10,
   },
   signatureImage: {
     width: 200,
@@ -195,7 +195,7 @@ const PDFDocument = ({ userData, signatureDataUrl }: { userData: UserData, signa
       </View>
 
       {/* Personal Information */}
-      <View style={styles.section}>
+      <View style={{height:120}}>
         <Text style={styles.sectionTitle}>Informations Personnelles</Text>
         <View style={styles.infoGrid}>
           <View style={styles.infoItem}>
@@ -233,6 +233,9 @@ const PDFDocument = ({ userData, signatureDataUrl }: { userData: UserData, signa
       </View>
 
       {/* Tests Table */}
+      
+      <View style={{display:"flex" ,flexDirection:"row"}}>
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Résultats des Tests</Text>
         <View style={styles.table}>
@@ -258,7 +261,7 @@ const PDFDocument = ({ userData, signatureDataUrl }: { userData: UserData, signa
       {/* Attendance Table */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Présences</Text>
-        <View style={styles.table}>
+        <View style={{width:200}}>
           <View style={styles.tableHeader}>
             <Text style={[styles.tableHeaderCell, { flex: 2 }]}>Date</Text>
             <Text style={styles.tableHeaderCell}>Statut</Text>
@@ -275,6 +278,21 @@ const PDFDocument = ({ userData, signatureDataUrl }: { userData: UserData, signa
           ))}
         </View>
       </View>
+
+
+
+
+
+
+
+
+
+
+
+
+
+      </View>
+
 
       {/* Signature */}
       {signatureDataUrl && (
